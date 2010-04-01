@@ -1,7 +1,9 @@
 
 # Google Wave Gadget Emulator #
 
-This is a tiny little bit of javascript to emulate the Google Wave Gadget API sufficiently to run some gadget examples side by side in iframes in a browser.
+This is a little bit of javascript to emulate the Google Wave Gadget API sufficiently to run some gadgets side by side in iframes in a browser.
 
-See also [my blog post about it](http://www.hokstad.com/google-wave-gadget-emulator.html)
+It now has no external dependencies, so you can use it to develop gadgets locally, even offline.
+
+See also [the blog post about it](http://www.hokstad.com/google-wave-gadget-emulator.html) by Vidar Hokstad, its original creator.
  

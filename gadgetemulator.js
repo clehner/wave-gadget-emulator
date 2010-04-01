@@ -10,27 +10,49 @@ function Gadgets() {
 
 Gadgets.prototype = {
 
+	_printState: function(object) {
+		if (!object) return "" + object;
+		var lines = [];
+		var i = 0;
+		for (var key in object) {
+			lines[i++] = key + ":  '" + object[key];
+		}
+		return i ? "{\n    " + lines.join("',\n    ") + "'\n  }" : "{\n  }";
+	},
+
 	_add_participant: function(id,part, name, thumb) {
-		if (!this._participants) { this._participants = new Array(); }
+		if (!this._participants) { this._participants = []; }
 		this._participants.push({id: id, part: part, displayName: name, thumbnailUrl: thumb});
 		return id;
 	},
 
 	_load: function(url) {
-		$.ajax({type: "GET", url: url, dataType: "xml", success: function(xml) {
-			var text = $(xml).find("Content").text();
+		function writeGadget(text) {
 			for (var p in gadgets._participants) {
 				var part = gadgets._participants[p];
 				var doc = part.part.document;
-				doc.write("<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js\"></script>");
-				doc.write("<script>document._participant_id="+part.id+";</script>");
-				doc.write("<script src=\"gadgetemulator.js\"></script>");
-				doc.write("<h3>Participant "+part.id+" - " +part.displayName+"</strong>");
-				doc.write(text);
-				doc.write("<script>gadgets.util._ready("+part.id+")</script>");
+				doc._participant_id = part.id;
+				doc.write("<h3 style='margin:0'>Participant "+
+					part.id + " - " + part.displayName + "</h3>"+
+					text);
+				gadgets.util._ready(part.id, doc);
 			}
-		}, error: function() { alert("Load failed"); }
-   	  })
+		}
+		var req = new XMLHttpRequest();
+		req.open("GET", url, true);
+		req.onreadystatechange = function (e) {
+			if (req.readyState == 4) {
+				if (req.status == 200) {
+					try {
+						writeGadget(req.responseXML.
+							getElementsByTagName("Content")[0].textContent);
+						return;
+					} catch (e) {}
+				}
+				alert("Load failed.");
+			}
+		};
+		req.send(null);
 	},
 
 	// --- To be called in the participant frames ---
@@ -38,7 +60,7 @@ Gadgets.prototype = {
 	_sendState: function() {
 		var s = this._rpc["wave_gadget_state"];
 		var state = this._state || {};
-		$('#state').val(wave.util.printJson(state, true, 2));
+		(document.getElementById('state')||{}).value = this._printState(state);
 		for (var cb in s) {
 			s[cb].cb(state);
 		}
@@ -63,8 +85,12 @@ Gadgets.prototype = {
 			var dirty = false;
 			this._state = this._state || {};
 			for (var i in a) {
-				if (a[i] != this._state[i]) {
-					this._state[i] = a[i];
+				if (a[i] !== this._state[i]) {
+					if (a[i] == null) {
+						delete this._state[i];
+					} else {
+						this._state[i] = a[i];
+					}
 					dirty = true;
 				}
 			}
@@ -86,10 +112,11 @@ Gadgets.prototype = {
 	util: { 
 		registerOnLoadHandler: function(f) {
 			document._gadgets_onload_handler = f;
-	f();
+			f();
 		},
-		_ready: function(pid) {
-			if (document._gadgets_onload_handler) document._gadgets_onload_handler();
+		_ready: function(pid, doc) {
+			doc = doc || document;
+			if (doc._gadgets_onload_handler) doc._gadgets_onload_handler();
 		},
 		getUrlParameters: function() { return {wave: new Wave()}; }
 	},
@@ -105,4 +132,3 @@ Gadgets.prototype = {
 }
 
 var gadgets = new Gadgets();
-
