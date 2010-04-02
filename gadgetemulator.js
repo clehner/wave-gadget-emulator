@@ -2,11 +2,7 @@
 // Gadget emulator that fakes just enough of the Google Wave gadget API
 // to let a gadget run in two iframes.
 
-function Wave() {
-}
-	
-function Gadgets() {
-}
+function Gadgets() {}
 
 Gadgets.prototype = {
 
@@ -20,7 +16,7 @@ Gadgets.prototype = {
 		return i ? "{\n    " + lines.join("',\n    ") + "'\n  }" : "{\n  }";
 	},
 
-	_add_participant: function(id,part, name, thumb) {
+	_add_participant: function(id, part, name, thumb) {
 		if (!this._participants) { this._participants = []; }
 		this._participants.push({id: id, part: part, displayName: name, thumbnailUrl: thumb});
 		return id;
@@ -54,7 +50,7 @@ Gadgets.prototype = {
 		};
 		req.send(null);
 	},
-
+	
 	// --- To be called in the participant frames ---
 
 	_sendState: function() {
@@ -118,7 +114,9 @@ Gadgets.prototype = {
 			doc = doc || document;
 			if (doc._gadgets_onload_handler) doc._gadgets_onload_handler();
 		},
-		getUrlParameters: function() { return {wave: new Wave()}; }
+		getUrlParameters: function() {
+			return {wave: true, waveId: "asdfg"};
+		}
 	},
 
 	rpc: { 
@@ -128,6 +126,10 @@ Gadgets.prototype = {
 		register: function(endpoint, cb) {
 			window.top.gadgets._register(document._participant_id,endpoint,cb);
 		}
+	},
+	
+	window: {
+		adjustHeight: function() {}
 	}
 }
 
