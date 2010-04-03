@@ -30,8 +30,8 @@ $("load").onsubmit = function() {
 		"<iframe id='part1' src='participantframe.html'><"+"/iframe>"+
 		"<iframe id='part2' src='participantframe.html'><"+"/iframe>";
 	gadgets = new Gadgets();
-	gadgets._add_participant('0', frames[0], "John", 'unknown.gif');
-	gadgets._add_participant('1', frames[1], "Peter", 'unknown.gif');
+	gadgets._add_participant('0', frames[0], "John", 'unknown.jpg');
+	gadgets._add_participant('1', frames[1], "Peter", 'unknown.jpg');
 	gadgets._load($("g").value);
 	return false;
 };
