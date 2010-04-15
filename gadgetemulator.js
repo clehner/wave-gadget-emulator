@@ -16,21 +16,25 @@ Gadgets.prototype = {
 		return i ? "{\n    " + lines.join("',\n    ") + "'\n  }" : "{\n  }";
 	},
 
-	_add_participant: function(id, part, name, thumb) {
-		if (!this._participants) { this._participants = []; }
-		this._participants.push({id: id, part: part, displayName: name, thumbnailUrl: thumb});
+	_add_participant: function(id, part, frame, name, thumb) {
+		if (!this._participants) { this._participants = {}; }
+		this._participants[id] = {id: id, part: part, frame: frame, displayName: name, thumbnailUrl: thumb};
 		return id;
 	},
 
 	_load: function(url) {
-		function writeGadget(text) {
+		function writeGadget(xml) {
+			var content = xml.getElementsByTagName("Content")[0].textContent;
+			var prefs = xml.getElementsByTagName("ModulePrefs")[0];
+			var height = prefs.getAttribute("height");
 			for (var p in gadgets._participants) {
 				var part = gadgets._participants[p];
 				var doc = part.part.document;
-				doc._participant_id = part.id;
+				part.frame.height = height;
+				doc._participant = part;
 				doc.write("<h3 style='margin:0'>Participant "+
 					part.id + " - " + part.displayName + "</h3>"+
-					text);
+					content);
 				gadgets.util._ready(part.id, doc);
 			}
 		}
@@ -40,8 +44,7 @@ Gadgets.prototype = {
 			if (req.readyState == 4) {
 				if (req.status == 200) {
 					try {
-						writeGadget(req.responseXML.
-							getElementsByTagName("Content")[0].textContent);
+						writeGadget(req.responseXML);
 						return;
 					} catch (e) {}
 				}
@@ -64,12 +67,7 @@ Gadgets.prototype = {
 
 	_sendParticipants: function() {
 		var s = this._rpc["wave_participants"];
-		var p = this._participants;
-		var part = [];
-		for (var i in p) {
-			part.push(p[i]);
-		}
-		var ob = {myId: 0, authorId: 0, participants: part};
+		var ob = {myId: 0, authorId: 0, participants: this._participants};
 		for (var cb in s) {
 			ob.myId = s[cb].part;
 			s[cb].cb(ob);
@@ -124,12 +122,16 @@ Gadgets.prototype = {
 			window.top.gadgets._call(cmd,params);
 		},
 		register: function(endpoint, cb) {
-			window.top.gadgets._register(document._participant_id,endpoint,cb);
+			window.top.gadgets._register(document._participant.id,endpoint,cb);
 		}
 	},
 	
 	window: {
-		adjustHeight: function() {}
+		adjustHeight: function(height) {
+			document._participant.frame.height = height ||
+				document.documentElement.scrollHeight ||
+				document.body.scrollHeight;
+		}
 	}
 }
 

@@ -3,7 +3,7 @@
 <head>
 <style>
 body { background: #8888cc; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
-iframe { background: #ffffff; width: 49%; height: 50%; }
+iframe { background: #ffffff; width: 49%; }
 #state { background: #cccccc; width: 99%; height: 25%; display: block; font-family: monospace; }
 </style>
 <script type="text/javascript" src="gadgetemulator.js"></script>
@@ -29,9 +29,11 @@ $("load").onsubmit = function() {
 	$("frames").innerHTML =
 		"<iframe id='part1' src='participantframe.html'><"+"/iframe>"+
 		"<iframe id='part2' src='participantframe.html'><"+"/iframe>";
+	var f1 = $("part1");
+	var f2 = $("part2");
 	gadgets = new Gadgets();
-	gadgets._add_participant('0', frames[0], "John", 'participant.jpg');
-	gadgets._add_participant('1', frames[1], "Peter", 'participant.jpg');
+	gadgets._add_participant('p0', frames[0], f1, "John", 'participant.jpg');
+	gadgets._add_participant('p1', frames[1], f2, "Peter", 'participant.jpg');
 	gadgets._load($("g").value);
 	return false;
 };
