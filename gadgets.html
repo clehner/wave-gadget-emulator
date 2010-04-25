@@ -5,16 +5,21 @@
 body { background: #8888cc; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
 iframe { background: #ffffff; width: 49%; vertical-align: top; }
 #state { background: #cccccc; width: 99%; height: 25%; display: block; font-family: monospace; }
+label { border: 1px solid #666; padding: .1em .2em; }
 </style>
 <script type="text/javascript" src="gadgetemulator.js"></script>
 </head>
 <body>
 A <a href="http://wave.google.com/">Google Wave</a> Gadget API emulator. First by <a href="http://www.hokstad.com/google-wave-gadget-emulator.html">Vidar Hokstad</a><br/>
 <form id="load" method="get" action="">
-Gadget XML source: <input id="g" type="text" size="40" value="" />
-<input type="submit" value="load" />
+Gadget XML source: <input id="g" type="text" size="40" value=""/>
+<input type="submit" value="load"/>
 </form>
-<br/>
+<p>Mode:
+<label for="mode-view"><input type="radio" name="mode" id="mode-view" checked="checked"/> View</label>
+<label for="mode-edit"><input type="radio" name="mode" id="mode-edit"/> Edit</label>
+<label for="mode-playback"><input type="radio" name="mode" id="mode-playback"/> Playback</label>
+</p>
 <div id="frames">
 <iframe></iframe><iframe></iframe>
 </div>
@@ -22,21 +27,25 @@ Gadget XML source: <input id="g" type="text" size="40" value="" />
 <textarea id="state">
 The state of the gadget will be printed here
 </textarea>
-
 <script type="text/javascript">
 function $(id) { return document.getElementById(id); }
 $("load").onsubmit = function() {
+	$("mode-view").checked = true;
 	$("frames").innerHTML =
-		"<iframe id='part1' src='participantframe.html'><"+"/iframe>"+
-		"<iframe id='part2' src='participantframe.html'><"+"/iframe>";
+		"<iframe id='part1'><"+"/iframe>"+
+		"<iframe id='part2'><"+"/iframe>";
 	var f1 = $("part1");
 	var f2 = $("part2");
+	//var f2 = window.open("participantframe.html", "p1", "a");
 	gadgets = new Gadgets();
 	gadgets._add_participant('p0', frames[0], f1, "John", 'participant.jpg');
 	gadgets._add_participant('p1', frames[1], f2, "Peter", 'participant.jpg');
 	gadgets._load($("g").value);
 	return false;
 };
+$("mode-view").onchange = function () { gadgets._setMode("view"); };
+$("mode-edit").onchange = function () { gadgets._setMode("edit"); };
+$("mode-playback").onchange = function () { gadgets._setMode("playback"); };
 </script>
 </body>
 </html>

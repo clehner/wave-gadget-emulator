@@ -2,7 +2,45 @@
 // Gadget emulator that fakes just enough of the Google Wave gadget API
 // to let a gadget run in two iframes.
 
-function Gadgets() {}
+function Rpc(host, participant) {
+	this._host = host; // Gadgets
+	this._participant = participant;
+}
+
+Rpc.prototype = { 
+	call: function(arg1, cmd, arg2, params) {
+		this._host._call(cmd,params);
+	},
+	register: function(endpoint, cb) {
+		this._host._register(this._participant.id,endpoint,cb);
+	}
+};
+
+function Gadgets(host, part, win, frame) {
+	if (host && part && win) {
+		this.rpc = new Rpc(host, part); // Gadgets
+		this.window = new Window(win, frame);
+	} else {
+		this._rpc = {};
+	}
+}
+
+function Window(win, frame) {
+	this._win = win;
+	this._frame = frame;
+}
+Window.prototype = {
+	adjustHeight: function(height) {
+		height = height || this._win.document.documentElement.scrollHeight ||
+			this._win.document.body.scrollHeight || this._win.outerHeight;
+		var part = this._win.document._participant;
+		if (this._frame) {
+			this._frame.height = height;
+		} else {
+			this._win.resizeBy(0, height - this._win.innerHeight);
+		}
+	}
+};
 
 Gadgets.prototype = {
 
@@ -16,9 +54,10 @@ Gadgets.prototype = {
 		return i ? "{\n    " + lines.join("',\n    ") + "'\n  }" : "{\n  }";
 	},
 
-	_add_participant: function(id, part, frame, name, thumb) {
+	_add_participant: function(id, win, frame, name, thumb) {
 		if (!this._participants) { this._participants = {}; }
-		this._participants[id] = {id: id, part: part, frame: frame, displayName: name, thumbnailUrl: thumb};
+		this._participants[id] = {id: id, win: win, frame: frame, displayName: name, thumbnailUrl: thumb};
+		this._sendParticipants();
 		return id;
 	},
 
@@ -29,12 +68,15 @@ Gadgets.prototype = {
 			var height = prefs.getAttribute("height");
 			for (var p in gadgets._participants) {
 				var part = gadgets._participants[p];
-				var doc = part.part.document;
-				part.frame.height = height;
-				doc._participant = part;
-				doc.write("<h3 style='margin:0'>Participant "+
-					part.id + " - " + part.displayName + "</h3>"+
+				var doc = part.win.document;
+				if (part.frame) {
+					part.frame.height = height;
+				}
+				var g = part.win.gadgets = new Gadgets(gadgets, part, part.win, part.frame);
+				doc.write("<h3 style='margin:0'>Participant " +
+					part.id + " - " + part.displayName + "</h3>" +
 					content);
+				part.win.gadgets = g;
 				gadgets.util._ready(part.id, doc);
 			}
 		}
@@ -54,6 +96,11 @@ Gadgets.prototype = {
 		req.send(null);
 	},
 	
+	_setMode: function(mode) {
+		this._mode = mode in {"edit":1,"playback":1} ? mode : "view";
+		this._sendMode();
+	},
+
 	// --- To be called in the participant frames ---
 
 	_sendState: function() {
@@ -71,6 +118,19 @@ Gadgets.prototype = {
 		for (var cb in s) {
 			ob.myId = s[cb].part;
 			s[cb].cb(ob);
+		}
+	},
+	
+	_mode: "view",
+	
+	_sendMode: function() {
+		var s = this._rpc["wave_gadget_mode"];
+		var modeObj = {
+			"${playback}": (this._mode == "playback"),
+			"${edit}": (this._mode == "edit")
+		};
+		for (var cb in s) {
+			s[cb].cb(modeObj);
 		}
 	},
 
@@ -92,13 +152,13 @@ Gadgets.prototype = {
 		} else if (cmd == "wave_enable") {
 			this._sendState();
 			this._sendParticipants();
+			this._sendMode();
 		} else {
 	 		alert("Unhandled RPC command: "+cmd);
 		}
 	},
 
 	_register: function(partid, endpoint, cb) {
-		this._rpc = this._rpc || {};
 		this._rpc[endpoint] = this._rpc[endpoint] || [];
 		this._rpc[endpoint].push({part: partid, cb: cb});
 	},
@@ -117,22 +177,9 @@ Gadgets.prototype = {
 		}
 	},
 
-	rpc: { 
-		call: function(arg1, cmd, arg2, params) {
-			window.top.gadgets._call(cmd,params);
-		},
-		register: function(endpoint, cb) {
-			window.top.gadgets._register(document._participant.id,endpoint,cb);
-		}
-	},
+	rpc: Rpc.prototype,
 	
-	window: {
-		adjustHeight: function(height) {
-			document._participant.frame.height = height ||
-				document.documentElement.scrollHeight ||
-				document.body.scrollHeight;
-		}
-	}
-}
+	window: Window.prototype
+};
 
 var gadgets = new Gadgets();
