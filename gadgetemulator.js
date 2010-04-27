@@ -182,4 +182,60 @@ Gadgets.prototype = {
 	window: Window.prototype
 };
 
-var gadgets = new Gadgets();
+// Shim for onhashchange
+"onhashchange" in window || (function () {
+	var lastHash = '';
+	function pollHash() {
+		if (lastHash !== location.hash) {
+			lastHash = location.hash;
+			var event = document.createEvent("HTMLEvents");
+			event.initEvent("hashchange", false, false);
+			window.dispatchEvent(event);
+			if (typeof onhashchange == "function") {
+				onhashchange(event);
+			}
+		}
+	}
+	pollHash();
+	setInterval(pollHash, 100);
+})();
+
+var gadgets;
+
+function updatePage() {
+	var gadgetXml = (/#gadget=(.*)/.exec(location.hash) || {})[1];
+	if (gadgetXml) {
+		document.body.className = "gadget-page";
+		loadGadget(gadgetXml);
+		$("g").value = gadgetXml;
+	} else {
+		document.body.className = "home-page";
+	}
+}
+updatePage();
+window.onhashchange = updatePage;
+
+function $(id) { return document.getElementById(id); }
+$("mode-view").onchange = function () { gadgets._setMode("view"); };
+$("mode-edit").onchange = function () { gadgets._setMode("edit"); };
+$("mode-playback").onchange = function () { gadgets._setMode("playback"); };
+$("load").onsubmit = function () {
+	location.hash = "#gadget=" + $("g").value;
+	return false;
+};
+
+function loadGadget(url) {
+	$("mode-view").checked = true;
+	$("frames").innerHTML =
+		"<iframe id='part1'><"+"/iframe>"+
+		"<iframe id='part2'><"+"/iframe>";
+	var f1 = $("part1");
+	var f2 = $("part2");
+	//var f2 = window.open("participantframe.html", "p1", "a");
+	gadgets = new Gadgets();
+	gadgets._add_participant('p0', frames[0], f1, "John", 'participant.jpg');
+	gadgets._add_participant('p1', frames[1], f2, "Peter", 'participant.jpg');
+	gadgets._load(url);
+	return false;
+}
+
