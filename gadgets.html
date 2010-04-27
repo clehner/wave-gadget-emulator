@@ -2,13 +2,15 @@
 <html>
 <head>
 <style>
-body { background: #8888cc; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+body, #home-page, #gadget-page { background: #8888cc; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+#gadget-title { margin-top: 0; }
 iframe { background: #ffffff; width: 49%; vertical-align: top; }
 #state { background: #cccccc; width: 99%; height: 25%; display: block; font-family: monospace; }
 label { border: 1px solid #666; padding: .1em .2em; }
 #home-page, #gadget-page { display: none; }
 .home-page #home-page, .gadget-page #gadget-page { display: block; }
 </style>
+<title>Wave Gadget Emulator</title>
 </head>
 <body class="home-page">
 
@@ -21,11 +23,12 @@ Gadget XML source: <input id="g" type="text" size="40" value=""/>
 </div>
 
 <div id="gadget-page">
-<a href="#">Back</a>
+<h2 id="gadget-title"> </h2>
 <p>Mode:
 <label for="mode-view"><input type="radio" name="mode" id="mode-view" checked="checked"/> View</label>
 <label for="mode-edit"><input type="radio" name="mode" id="mode-edit"/> Edit</label>
 <label for="mode-playback"><input type="radio" name="mode" id="mode-playback"/> Playback</label>
+<a href="#">Back</a>
 </p>
 <div id="frames">
 <iframe></iframe><iframe></iframe>

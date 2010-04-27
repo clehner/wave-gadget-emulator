@@ -66,6 +66,8 @@ Gadgets.prototype = {
 			var content = xml.getElementsByTagName("Content")[0].textContent;
 			var prefs = xml.getElementsByTagName("ModulePrefs")[0];
 			var height = prefs.getAttribute("height");
+			var title = prefs.getAttribute("title");
+			$("gadget-title").firstChild.nodeValue = title;
 			for (var p in gadgets._participants) {
 				var part = gadgets._participants[p];
 				var doc = part.win.document;
