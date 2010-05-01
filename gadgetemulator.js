@@ -184,10 +184,10 @@ Gadgets.prototype = {
 	window: Window.prototype
 };
 
-// Shim for onhashchange
+// Shim for the hashchange event
 "onhashchange" in window || (function () {
 	var lastHash = '';
-	function pollHash() {
+	setInterval(function pollHash() {
 		if (lastHash !== location.hash) {
 			lastHash = location.hash;
 			var event = document.createEvent("HTMLEvents");
@@ -197,9 +197,7 @@ Gadgets.prototype = {
 				onhashchange(event);
 			}
 		}
-	}
-	pollHash();
-	setInterval(pollHash, 100);
+	}, 100);
 })();
 
 var gadgets;
@@ -229,15 +227,14 @@ $("load").onsubmit = function () {
 function loadGadget(url) {
 	$("mode-view").checked = true;
 	$("frames").innerHTML =
-		"<iframe id='part1'><"+"/iframe>"+
-		"<iframe id='part2'><"+"/iframe>";
+		"<iframe id='part1'></iframe>"+
+		"<iframe id='part2'></iframe>";
 	var f1 = $("part1");
 	var f2 = $("part2");
 	//var f2 = window.open("participantframe.html", "p1", "a");
 	gadgets = new Gadgets();
-	gadgets._add_participant('p0', frames[0], f1, "John", 'participant.jpg');
-	gadgets._add_participant('p1', frames[1], f2, "Peter", 'participant.jpg');
+	gadgets._add_participant('john@example.com', frames[0], f1, "John", 'participant.jpg');
+	gadgets._add_participant('peter@example.com', frames[1], f2, "Peter", 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoAQMAAAC2MCouAAAAAXNSR0IArs4c6QAAAANQTFRF/5IAWpXhrwAAAAxJREFUCB1jYBhZAAAA8AABlLHiVgAAAABJRU5ErkJggg==');
 	gadgets._load(url);
-	return false;
 }
 
