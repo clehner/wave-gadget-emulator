@@ -30,16 +30,25 @@ function Window(win, frame) {
 	this._frame = frame;
 }
 Window.prototype = {
+	getViewportDimensions: function() {
+		var win = this._win;
+		var doc = win.document;
+		return {
+			width: doc.documentElement.scrollWidth ||
+				doc.body.scrollWidth || win.outerWidth,
+			height: doc.documentElement.scrollHeight ||
+				doc.body.scrollHeight || win.outerHeight
+		};
+	},
 	adjustHeight: function(height) {
-		height = height || this._win.document.documentElement.scrollHeight ||
-			this._win.document.body.scrollHeight || this._win.outerHeight;
-		var part = this._win.document._participant;
 		if (this._frame) {
-			this._frame.height = height;
+			this._frame.height = height ||
+				this.getViewportDimensions().height;
 		} else {
 			this._win.resizeBy(0, height - this._win.innerHeight);
 		}
-	}
+	},
+	setTitle: function () {}
 };
 
 Gadgets.prototype = {
@@ -62,6 +71,9 @@ Gadgets.prototype = {
 	},
 
 	_load: function(url) {
+		if (url.indexOf("http://") == 0) {
+			url = "proxy.php?url=" + encodeURIComponent(url);
+		}
 		function writeGadget(xml) {
 			var content = xml.getElementsByTagName("Content")[0].textContent;
 			var prefs = xml.getElementsByTagName("ModulePrefs")[0];
@@ -202,8 +214,10 @@ Gadgets.prototype = {
 
 var gadgets;
 
+function $(id) { return document.getElementById(id); }
+
 function updatePage() {
-	var gadgetXml = (/#gadget=(.*)/.exec(location.hash) || {})[1];
+	var gadgetXml = (/#(.*)/.exec(location.hash) || {})[1];
 	if (gadgetXml) {
 		document.body.className = "gadget-page";
 		loadGadget(gadgetXml);
@@ -212,15 +226,14 @@ function updatePage() {
 		document.body.className = "home-page";
 	}
 }
-updatePage();
 window.onhashchange = updatePage;
+updatePage();
 
-function $(id) { return document.getElementById(id); }
 $("mode-view").onchange = function () { gadgets._setMode("view"); };
 $("mode-edit").onchange = function () { gadgets._setMode("edit"); };
 $("mode-playback").onchange = function () { gadgets._setMode("playback"); };
 $("load").onsubmit = function () {
-	location.hash = "#gadget=" + $("g").value;
+	location.hash = "#" + $("g").value;
 	return false;
 };
 
