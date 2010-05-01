@@ -63,10 +63,11 @@ Gadgets.prototype = {
 		return i ? "{\n    " + lines.join("',\n    ") + "'\n  }" : "{\n  }";
 	},
 
-	_add_participant: function(id, win, frame, name, thumb) {
+	_add_participant: function(id, win, frame, name, thumb, subtitle) {
 		if (!this._participants) { this._participants = {}; }
 		this._participants[id] = {id: id, win: win, frame: frame, displayName: name, thumbnailUrl: thumb};
 		this._sendParticipants();
+		subtitle.innerHTML = id + " - " + name;
 		return id;
 	},
 
@@ -87,10 +88,8 @@ Gadgets.prototype = {
 					part.frame.height = height;
 				}
 				var g = part.win.gadgets = new Gadgets(gadgets, part, part.win, part.frame);
-				doc.write("<h3 style='margin:0'>Participant " +
-					part.id + " - " + part.displayName + "</h3>" +
-					content);
 				part.win.gadgets = g;
+				doc.write(content);
 				gadgets.util._ready(part.id, doc);
 			}
 		}
@@ -246,8 +245,8 @@ function loadGadget(url) {
 	var f2 = $("part2");
 	//var f2 = window.open("participantframe.html", "p1", "a");
 	gadgets = new Gadgets();
-	gadgets._add_participant('john@example.com', frames[0], f1, "John", 'participant.jpg');
-	gadgets._add_participant('peter@example.com', frames[1], f2, "Peter", 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoAQMAAAC2MCouAAAAAXNSR0IArs4c6QAAAANQTFRF/5IAWpXhrwAAAAxJREFUCB1jYBhZAAAA8AABlLHiVgAAAABJRU5ErkJggg==');
+	gadgets._add_participant('john@example.com', frames[0], f1, "John", 'participant.jpg', $("subtitle1"));
+	gadgets._add_participant('peter@example.com', frames[1], f2, "Peter", 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoAQMAAAC2MCouAAAAAXNSR0IArs4c6QAAAANQTFRF/5IAWpXhrwAAAAxJREFUCB1jYBhZAAAA8AABlLHiVgAAAABJRU5ErkJggg==', $("subtitle2"));
 	gadgets._load(url);
 }
 
