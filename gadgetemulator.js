@@ -168,7 +168,7 @@ Gadgets.prototype = {
 	util: { 
 		registerOnLoadHandler: function(f) {
 			document._gadgets_onload_handler = f;
-			f();
+			setTimeout(f, 10);
 		},
 		_ready: function(pid, doc) {
 			doc = doc || document;
