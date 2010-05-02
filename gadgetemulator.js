@@ -88,8 +88,8 @@ Gadgets.prototype = {
 					part.frame.height = height;
 				}
 				var g = part.win.gadgets = new Gadgets(gadgets, part, part.win, part.frame);
-				part.win.gadgets = g;
 				doc.write(content);
+				part.win.gadgets = g;
 				gadgets.util._ready(part.id, doc);
 			}
 		}
