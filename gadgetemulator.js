@@ -16,10 +16,32 @@ Rpc.prototype = {
 	}
 };
 
+function Util() {}
+Util.prototype = {
+	registerOnLoadHandler: function(f) {
+		var queue = this._onloadQueue || (this._onloadQueue = []);
+		queue.push(f);
+		//setTimeout(this._ready, 10);
+	},
+	_ready: function(pid) {
+		var queue = this._onloadQueue;
+		if (queue) {
+			for (var i = 0; i < queue.length; i++) {
+				queue[i]();
+			}
+			delete this._onloadQueue;
+		}
+	},
+	getUrlParameters: function() {
+		return {wave: true, waveId: "asdfg"};
+	}
+};
+
 function Gadgets(host, part, win, frame) {
 	if (host && part && win) {
 		this.rpc = new Rpc(host, part); // Gadgets
 		this.window = new Window(win, frame);
+		this.util = new Util();
 	} else {
 		this._rpc = {};
 	}
@@ -88,9 +110,14 @@ Gadgets.prototype = {
 					part.frame.height = height;
 				}
 				var g = part.win.gadgets = new Gadgets(gadgets, part, part.win, part.frame);
-				doc.write(content);
-				part.win.gadgets = g;
-				gadgets.util._ready(part.id, doc);
+				doc.write(
+					"<script type='text/javascript' src='wave.js'></script>" +
+					content +
+					"<script type='text/javascript'>" +
+					"gadgets.util._ready(\"" + part.id + "\");" +
+					"</script>"
+				);
+				part.win.gadgets = g; // necessary for firefox
 			}
 		}
 		var req = new XMLHttpRequest();
@@ -127,7 +154,11 @@ Gadgets.prototype = {
 
 	_sendParticipants: function() {
 		var s = this._rpc["wave_participants"];
-		var ob = {myId: 0, authorId: 0, participants: this._participants};
+		var ob = {
+			myId: 0,
+			authorId: s && s[0] && s[0].part,
+			participants: this._participants
+		};
 		for (var cb in s) {
 			ob.myId = s[cb].part;
 			s[cb].cb(ob);
@@ -176,19 +207,7 @@ Gadgets.prototype = {
 		this._rpc[endpoint].push({part: partid, cb: cb});
 	},
 
-	util: { 
-		registerOnLoadHandler: function(f) {
-			document._gadgets_onload_handler = f;
-			setTimeout(f, 10);
-		},
-		_ready: function(pid, doc) {
-			doc = doc || document;
-			if (doc._gadgets_onload_handler) doc._gadgets_onload_handler();
-		},
-		getUrlParameters: function() {
-			return {wave: true, waveId: "asdfg"};
-		}
-	},
+	util: Util.prototype,
 
 	rpc: Rpc.prototype,
 	
