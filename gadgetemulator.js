@@ -129,8 +129,10 @@ Gadgets.prototype = {
 						writeGadget(req.responseXML);
 						return;
 					} catch (e) {}
+				} else if (req.status != 0) {
+					// 0 is if the browser canceled it.
+					alert("Load failed.");
 				}
-				alert("Load failed.");
 			}
 		};
 		req.send(null);
