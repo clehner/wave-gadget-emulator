@@ -16,10 +16,32 @@ Rpc.prototype = {
 	}
 };
 
+function Util() {}
+Util.prototype = {
+	registerOnLoadHandler: function(f) {
+		var queue = this._onloadQueue || (this._onloadQueue = []);
+		queue.push(f);
+		//setTimeout(this._ready, 10);
+	},
+	_ready: function(pid) {
+		var queue = this._onloadQueue;
+		if (queue) {
+			for (var i = 0; i < queue.length; i++) {
+				queue[i]();
+			}
+			delete this._onloadQueue;
+		}
+	},
+	getUrlParameters: function() {
+		return {wave: true, waveId: "asdfg"};
+	}
+};
+
 function Gadgets(host, part, win, frame) {
 	if (host && part && win) {
 		this.rpc = new Rpc(host, part); // Gadgets
 		this.window = new Window(win, frame);
+		this.util = new Util();
 	} else {
 		this._rpc = {};
 	}
@@ -30,16 +52,25 @@ function Window(win, frame) {
 	this._frame = frame;
 }
 Window.prototype = {
+	getViewportDimensions: function() {
+		var win = this._win;
+		var doc = win.document;
+		return {
+			width: doc.documentElement.scrollWidth ||
+				doc.body.scrollWidth || win.outerWidth,
+			height: doc.documentElement.scrollHeight ||
+				doc.body.scrollHeight || win.outerHeight
+		};
+	},
 	adjustHeight: function(height) {
-		height = height || this._win.document.documentElement.scrollHeight ||
-			this._win.document.body.scrollHeight || this._win.outerHeight;
-		var part = this._win.document._participant;
 		if (this._frame) {
-			this._frame.height = height;
+			this._frame.height = height ||
+				this.getViewportDimensions().height;
 		} else {
 			this._win.resizeBy(0, height - this._win.innerHeight);
 		}
-	}
+	},
+	setTitle: function () {}
 };
 
 Gadgets.prototype = {
@@ -54,14 +85,18 @@ Gadgets.prototype = {
 		return i ? "{\n    " + lines.join("',\n    ") + "'\n  }" : "{\n  }";
 	},
 
-	_add_participant: function(id, win, frame, name, thumb) {
+	_add_participant: function(id, win, frame, name, thumb, subtitle) {
 		if (!this._participants) { this._participants = {}; }
 		this._participants[id] = {id: id, win: win, frame: frame, displayName: name, thumbnailUrl: thumb};
 		this._sendParticipants();
+		subtitle.innerHTML = id + " - " + name;
 		return id;
 	},
 
 	_load: function(url) {
+		if (url.indexOf("http://") == 0) {
+			url = "proxy.php?url=" + encodeURIComponent(url);
+		}
 		function writeGadget(xml) {
 			var content = xml.getElementsByTagName("Content")[0].textContent;
 			var prefs = xml.getElementsByTagName("ModulePrefs")[0];
@@ -75,11 +110,14 @@ Gadgets.prototype = {
 					part.frame.height = height;
 				}
 				var g = part.win.gadgets = new Gadgets(gadgets, part, part.win, part.frame);
-				doc.write("<h3 style='margin:0'>Participant " +
-					part.id + " - " + part.displayName + "</h3>" +
-					content);
-				part.win.gadgets = g;
-				gadgets.util._ready(part.id, doc);
+				doc.write(
+					"<script type='text/javascript' src='wave.js'></script>" +
+					content +
+					"<script type='text/javascript'>" +
+					"gadgets.util._ready(\"" + part.id + "\");" +
+					"</script>"
+				);
+				part.win.gadgets = g; // necessary for firefox
 			}
 		}
 		var req = new XMLHttpRequest();
@@ -91,8 +129,10 @@ Gadgets.prototype = {
 						writeGadget(req.responseXML);
 						return;
 					} catch (e) {}
+				} else if (req.status != 0) {
+					// 0 is if the browser canceled it.
+					alert("Load failed.");
 				}
-				alert("Load failed.");
 			}
 		};
 		req.send(null);
@@ -116,7 +156,11 @@ Gadgets.prototype = {
 
 	_sendParticipants: function() {
 		var s = this._rpc["wave_participants"];
-		var ob = {myId: 0, authorId: 0, participants: this._participants};
+		var ob = {
+			myId: 0,
+			authorId: s && s[0] && s[0].part,
+			participants: this._participants
+		};
 		for (var cb in s) {
 			ob.myId = s[cb].part;
 			s[cb].cb(ob);
@@ -165,29 +209,17 @@ Gadgets.prototype = {
 		this._rpc[endpoint].push({part: partid, cb: cb});
 	},
 
-	util: { 
-		registerOnLoadHandler: function(f) {
-			document._gadgets_onload_handler = f;
-			f();
-		},
-		_ready: function(pid, doc) {
-			doc = doc || document;
-			if (doc._gadgets_onload_handler) doc._gadgets_onload_handler();
-		},
-		getUrlParameters: function() {
-			return {wave: true, waveId: "asdfg"};
-		}
-	},
+	util: Util.prototype,
 
 	rpc: Rpc.prototype,
 	
 	window: Window.prototype
 };
 
-// Shim for onhashchange
+// Shim for the hashchange event
 "onhashchange" in window || (function () {
 	var lastHash = '';
-	function pollHash() {
+	setInterval(function pollHash() {
 		if (lastHash !== location.hash) {
 			lastHash = location.hash;
 			var event = document.createEvent("HTMLEvents");
@@ -197,15 +229,15 @@ Gadgets.prototype = {
 				onhashchange(event);
 			}
 		}
-	}
-	pollHash();
-	setInterval(pollHash, 100);
+	}, 100);
 })();
 
 var gadgets;
 
+function $(id) { return document.getElementById(id); }
+
 function updatePage() {
-	var gadgetXml = (/#gadget=(.*)/.exec(location.hash) || {})[1];
+	var gadgetXml = (/#(.*)/.exec(location.hash) || {})[1];
 	if (gadgetXml) {
 		document.body.className = "gadget-page";
 		loadGadget(gadgetXml);
@@ -214,30 +246,28 @@ function updatePage() {
 		document.body.className = "home-page";
 	}
 }
-updatePage();
 window.onhashchange = updatePage;
+updatePage();
 
-function $(id) { return document.getElementById(id); }
 $("mode-view").onchange = function () { gadgets._setMode("view"); };
 $("mode-edit").onchange = function () { gadgets._setMode("edit"); };
 $("mode-playback").onchange = function () { gadgets._setMode("playback"); };
 $("load").onsubmit = function () {
-	location.hash = "#gadget=" + $("g").value;
+	location.hash = "#" + $("g").value;
 	return false;
 };
 
 function loadGadget(url) {
 	$("mode-view").checked = true;
 	$("frames").innerHTML =
-		"<iframe id='part1'><"+"/iframe>"+
-		"<iframe id='part2'><"+"/iframe>";
+		"<iframe id='part1'></iframe>"+
+		"<iframe id='part2'></iframe>";
 	var f1 = $("part1");
 	var f2 = $("part2");
 	//var f2 = window.open("participantframe.html", "p1", "a");
 	gadgets = new Gadgets();
-	gadgets._add_participant('p0', frames[0], f1, "John", 'participant.jpg');
-	gadgets._add_participant('p1', frames[1], f2, "Peter", 'participant.jpg');
+	gadgets._add_participant('john@example.com', frames[0], f1, "John", 'participant.jpg', $("subtitle1"));
+	gadgets._add_participant('peter@example.com', frames[1], f2, "Peter", 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoAQMAAAC2MCouAAAAAXNSR0IArs4c6QAAAANQTFRF/5IAWpXhrwAAAAxJREFUCB1jYBhZAAAA8AABlLHiVgAAAABJRU5ErkJggg==', $("subtitle2"));
 	gadgets._load(url);
-	return false;
 }
 
