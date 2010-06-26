@@ -156,7 +156,7 @@ Gadgets.prototype = {
 			this._sendParticipants();
 			this._sendMode();
 		} else {
-	 		alert("Unhandled RPC command: "+cmd);
+	 		window.console && console.log("Unhandled RPC command: "+cmd);
 		}
 	},
 
