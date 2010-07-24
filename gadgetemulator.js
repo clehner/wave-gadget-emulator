@@ -70,6 +70,15 @@ Window.prototype = {
 			this._win.resizeBy(0, height - this._win.innerHeight);
 		}
 	},
+	adjustWidth: function(width) {
+		if (this._frame) {
+			width = width || this.getViewportDimensions().width;
+			this._frame.width = width;
+			this._frame.style.width = width + "px";
+		} else {
+			this._win.resizeBy(width - this._win.innerWidth, 0);
+		}
+	},
 	setTitle: function () {}
 };
 
@@ -199,6 +208,13 @@ Gadgets.prototype = {
 			this._sendState();
 			this._sendParticipants();
 			this._sendMode();
+		} else if (cmd == "setIframeWidth") {
+			for (var pid in this._participants) {
+				var part = this._participants[pid];
+				new Window(part.win, part.frame).adjustWidth(a);
+			}
+		} else if (cmd == "set_snippet") {
+			// TODO
 		} else {
 	 		window.console && console.log("Unhandled RPC command: "+cmd);
 		}
@@ -224,7 +240,7 @@ Gadgets.prototype = {
 			lastHash = location.hash;
 			var event = document.createEvent("HTMLEvents");
 			event.initEvent("hashchange", false, false);
-			window.dispatchEvent(event);
+			document.body.dispatchEvent(event);
 			if (typeof onhashchange == "function") {
 				onhashchange(event);
 			}
